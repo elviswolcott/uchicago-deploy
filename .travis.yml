@@ -1,0 +1,33 @@
+language: node_js
+node_js:
+- node
+os: linux
+jobs:
+  include:
+  - stage: test
+    script: npm test
+  - stage: deploy
+    if: type = push AND tag IS present
+    script: npm run build
+    env:
+    - BUILD_PATH=/build/
+    - DEPLOY_PATH=/
+    - CNETID=your-cnet-id
+    addons:
+      ssh_known_hosts: linux.cs.uchicago.edu
+    before_deploy:
+    - openssl aes-256-cbc -K $encrypted_91a84ed91817_key -iv $encrypted_91a84ed91817_iv
+      -in deploy_rsa.enc -out /tmp/deploy_rsa -d
+    - eval "$(ssh-agent -s)"
+    - chmod 600 /tmp/deploy_rsa
+    - ssh-add /tmp/deploy_rsa
+    deploy:
+      provider: script
+      skip_cleanup: true
+      script: bash ./deploy.sh
+      on:
+        tags: true
+        branch: master
+stages:
+- test
+- deploy
